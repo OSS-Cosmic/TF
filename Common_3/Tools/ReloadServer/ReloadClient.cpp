@@ -52,7 +52,6 @@ If an error occurs on the host:
 
 #include "../../Application/Interfaces/IInput.h"
 #include "../../Application/Interfaces/IUI.h"
-#include "../../Game/Interfaces/IScripting.h"
 #include "../../Utilities/Interfaces/IFileSystem.h"
 #include "../../Utilities/Interfaces/ILog.h"
 #include "../../Utilities/Interfaces/IThread.h"
@@ -758,7 +757,6 @@ void platformReloadClientAddReloadShadersButton(UIComponent* pReloadShaderCompon
                                     UNREF_PARAM(pUserData);
                                     platformReloadClientRequestShaderRecompile();
                                 });
-    REGISTER_LUA_WIDGET(pShaderReload);
 
     gClient.pReloadShaderComponent = pReloadShaderComponent;
 

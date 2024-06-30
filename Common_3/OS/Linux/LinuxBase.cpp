@@ -40,7 +40,6 @@
 #include "../../Application/Interfaces/IFont.h"
 #include "../../Application/Interfaces/IProfiler.h"
 #include "../../Application/Interfaces/IUI.h"
-#include "../../Game/Interfaces/IScripting.h"
 #include "../../Graphics/Interfaces/IGraphics.h"
 #include "../../Utilities/Interfaces/IFileSystem.h"
 #include "../../Utilities/Interfaces/ILog.h"
@@ -243,7 +242,6 @@ void setupPlatformUI(int32_t width, int32_t height)
     CheckboxWidget checkbox;
     checkbox.pData = &pApp->mSettings.mVSyncEnabled;
     UIWidget* pCheckbox = uiCreateComponentWidget(pToggleVSyncWindow, "Toggle VSync\t\t\t\t\t", &checkbox, WIDGET_TYPE_CHECKBOX);
-    REGISTER_LUA_WIDGET(pCheckbox);
 
 #if defined(ENABLE_FORGE_RELOAD_SHADER)
     // RELOAD CONTROL

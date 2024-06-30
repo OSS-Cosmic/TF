@@ -30,7 +30,7 @@ static inline bool charToDigit(uint8_t c , uint8_t base, uint8_t* res) {
   return true;
 }
 
-typedef bool (*bstr_cmp_handle)(struct TStrSpan s0, struct TStrSpan s1);
+typedef bool (*tfStrCmpHandle)(struct TStrSpan s0, struct TStrSpan s1);
 
 void tfStrUpper(struct TStrSpan slice)
 {
@@ -83,7 +83,7 @@ struct TStrSpan tfStrLTrim(struct TStrSpan slice)
 bool tfStrAssign(struct TStr* str, struct TStrSpan slice)
 {
     // set the length of the string alloc will
-    if (!bstrsetlen(str, slice.len))
+    if (!tfStrSetLen(str, slice.len))
         return false;
     // slices can potentially overlap to the dest string
     //    trimming and assigning
@@ -105,7 +105,7 @@ bool bstrresize(struct TStr* str, size_t len)
     return true;
 }
 
-bool bstrsetlen(struct TStr* str, size_t len)
+bool tfStrSetLen(struct TStr* str, size_t len)
 {
     if (len > str->alloc)
     {
@@ -128,7 +128,7 @@ bool bstrsetlen(struct TStr* str, size_t len)
     return true;
 }
 
-bool bstrUpdateLen(struct TStr* str)
+bool tfStrUpdateLen(struct TStr* str)
 {
     size_t len = strlen(str->buf);
     str->len = len;
@@ -136,11 +136,13 @@ bool bstrUpdateLen(struct TStr* str)
     return true;
 }
 
-bool bstr_clear(struct TStr* str)
+bool tfStrClear(struct TStr* str)
 {
-    if (!bstrsetlen(str, 0))
+    if (!tfStrSetLen(str, 0))
         return false;
-    str->buf[0] = 0;
+    if(str->buf != NULL) {
+        str->buf[0] = 0;
+    }
     return true;
 }
 
@@ -152,7 +154,7 @@ void tfStrFree(struct TStr* str)
     str->buf = NULL;
 }
 
-bool bstrsetresv(struct TStr* str, size_t reserveLen)
+bool tfStrSetResv(struct TStr* str, size_t reserveLen)
 {
     if (reserveLen > str->alloc)
     {
@@ -180,7 +182,7 @@ struct TStr tfStrDup(const struct TStr* str)
 
 bool tfStrAppendSlice(struct TStr* str, const struct TStrSpan slice)
 {
-    if (!bstrMakeRoomFor(str, slice.len + 1))
+    if (!tfStrMakeRoomFor(str, slice.len + 1))
         return false;
     memmove(str->buf + str->len, slice.buf, slice.len);
     str->len += slice.len;
@@ -188,7 +190,7 @@ bool tfStrAppendSlice(struct TStr* str, const struct TStrSpan slice)
     return true;
 }
 
-int bstrfmtll(struct TStrSpan slice, long long value)
+int tfstrfmtll(struct TStrSpan slice, long long value)
 {
     unsigned long long v;
     /* Generate the string representation, this method produces
@@ -239,7 +241,7 @@ int bstrfmtll(struct TStrSpan slice, long long value)
     return len;
 }
 
-int bstrfmtull(struct TStrSpan slice, unsigned long long value)
+int tfstrfmtull(struct TStrSpan slice, unsigned long long value)
 {
     /* Generate the string representation, this method produces
      * a reversed string. */
@@ -270,7 +272,7 @@ int bstrfmtull(struct TStrSpan slice, unsigned long long value)
     return len;
 }
 
-bool bstrcatfmt(struct TStr* s, char const* fmt, ...)
+bool tfstrcatfmt(struct TStr* s, char const* fmt, ...)
 {
     const char* f = fmt;
     va_list     ap;
@@ -278,7 +280,7 @@ bool bstrcatfmt(struct TStr* s, char const* fmt, ...)
     /* To avoid continuous reallocations, let's start with a buffer that
      * can hold at least two times the format string itself. It's not the
      * best heuristic but seems to work in practice. */
-    if (!bstrMakeRoomFor(s, strlen(fmt) * 2))
+    if (!tfStrMakeRoomFor(s, strlen(fmt) * 2))
         return false; // we failed to make room for
     va_start(ap, fmt);
     f = fmt; /* Next format specifier byte to process. */
@@ -290,7 +292,7 @@ bool bstrcatfmt(struct TStr* s, char const* fmt, ...)
         /* Make sure there is always space for at least 1 char. */
         if (tfStrAvailLen(*s) == 0)
         {
-            if (!bstrMakeRoomFor(s, 1))
+            if (!tfStrMakeRoomFor(s, 1))
                 return false;
         }
         ASSERT(s->len <= s->alloc);
@@ -311,14 +313,14 @@ bool bstrcatfmt(struct TStr* s, char const* fmt, ...)
             case 's':
             {
                 char* str = va_arg(ap, char*);
-                if (!bstrMakeRoomFor(s, strlen(str)))
+                if (!tfStrMakeRoomFor(s, strlen(str)))
                     return false;
                 break;
             }
             case 'S':
             {
                 const struct TStrSpan str = va_arg(ap, struct TStrSpan);
-                if (!bstrMakeRoomFor(s, str.len))
+                if (!tfStrMakeRoomFor(s, str.len))
                     return false;
                 memcpy(s->buf + s->len, str.buf, str.len);
                 s->len += str.len;
@@ -330,22 +332,22 @@ bool bstrcatfmt(struct TStr* s, char const* fmt, ...)
                 if (next == 'i')
                 {
                     num = va_arg(ap, int);
-                    if (!bstrMakeRoomFor(s, TFSTR_LLSTR_SIZE))
+                    if (!tfStrMakeRoomFor(s, TFSTR_LLSTR_SIZE))
                         return false;
                 }
                 else if (next == 'l')
                 {
                     num = va_arg(ap, long);
-                    if (!bstrMakeRoomFor(s, TFSTR_LLSTR_SIZE))
+                    if (!tfStrMakeRoomFor(s, TFSTR_LLSTR_SIZE))
                         return false;
                 }
                 else
                 {
                     num = va_arg(ap, long long);
-                    if (!bstrMakeRoomFor(s, TFSTR_LLSTR_SIZE))
+                    if (!tfStrMakeRoomFor(s, TFSTR_LLSTR_SIZE))
                         return false;
                 }
-                const int len = bstrfmtll(tfStrAvailSpan(*s), num);
+                const int len = tfstrfmtll(tfStrAvailSpan(*s), num);
                 if (len == -1)
                     return false;
                 s->len += len;
@@ -360,22 +362,22 @@ bool bstrcatfmt(struct TStr* s, char const* fmt, ...)
                 if (next == 'u')
                 {
                     unum = va_arg(ap, unsigned int);
-                    if (!bstrMakeRoomFor(s, TFSTR_LLSTR_SIZE))
+                    if (!tfStrMakeRoomFor(s, TFSTR_LLSTR_SIZE))
                         return false;
                 }
                 else if (next == 'L')
                 {
                     unum = va_arg(ap, unsigned long);
-                    if (!bstrMakeRoomFor(s, TFSTR_LLSTR_SIZE))
+                    if (!tfStrMakeRoomFor(s, TFSTR_LLSTR_SIZE))
                         return false;
                 }
                 else
                 {
                     unum = va_arg(ap, unsigned long long);
-                    if (!bstrMakeRoomFor(s, TFSTR_LLSTR_SIZE))
+                    if (!tfStrMakeRoomFor(s, TFSTR_LLSTR_SIZE))
                         return false;
                 }
-                const int len = bstrfmtull(tfStrAvailSpan(*s), unum);
+                const int len = tfstrfmtull(tfStrAvailSpan(*s), unum);
                 if (len == -1)
                     return false;
                 s->len += len;
@@ -395,7 +397,7 @@ bool bstrcatfmt(struct TStr* s, char const* fmt, ...)
     }
     va_end(ap);
 
-    if (!bstrMakeRoomFor(s, 1))
+    if (!tfStrMakeRoomFor(s, 1))
         return false;
     /* Add null-term */
     s->buf[s->len] = '\0';
@@ -424,30 +426,30 @@ static inline size_t readNumberBase(const char* buf, size_t pos, size_t len, int
 {
     ASSERT(base);
     (*base) = 10;
-    if ((*base) == 0)
+    if (pos + 2 < len && buf[0] == '0')
     {
-        if (pos + 2 >= len && buf[0] == '0')
+        switch (downcase(buf[1]))
         {
-            switch (downcase(buf[1]))
-            {
-            case 'b':
-                (*base) = 2;
-                return 2;
-            case 'o':
-                (*base) = 8;
-                return 2;
-            case 'x':
-                (*base) = 16;
-                return 2;
-            }
+        case 'b':
+            (*base) = 2;
+            return 2;
+        case 'o':
+            (*base) = 8;
+            return 2;
+        case 'x':
+            (*base) = 16;
+            return 2;
         }
     }
     return 0;
 }
 
-bool bstrReadull(struct TStrSpan slice, unsigned long long* result)
+bool tfStrReadull(struct TStrSpan slice, unsigned long long* result)
 {
     ASSERT(result);
+    if(tfStrEmpty(slice)) {
+        return false;
+    }
     size_t pos = 0;
     int    numBase = 0;
     pos += readNumberBase(slice.buf, pos, slice.len, &numBase);
@@ -466,9 +468,12 @@ bool bstrReadull(struct TStrSpan slice, unsigned long long* result)
     (*result) = val;
     return true;
 }
-bool bstrReadll(struct TStrSpan slice, long long* result)
+bool tfStrReadll(struct TStrSpan slice, long long* result)
 {
     ASSERT(result);
+    if(tfStrEmpty(slice)) {
+        return false;
+    }
     size_t pos = 0;
     int    sign = 1;
     int    numBase = 0;
@@ -491,16 +496,16 @@ bool bstrReadll(struct TStrSpan slice, long long* result)
     return true;
 }
 
-int bstrsscanf(struct TStrSpan slice, const char* fmt, ...)
+int tfstrsscanf(struct TStrSpan slice, const char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    const int result = bstrvsscanf(slice, fmt, ap);
+    const int result = tfstrvsscanf(slice, fmt, ap);
     va_end(ap);
     return result;
 }
 
-int bstrvsscanf(struct TStrSpan slice, const char* fmt, va_list ap)
+int tfstrvsscanf(struct TStrSpan slice, const char* fmt, va_list ap)
 {
     va_list cpy;
     char    staticbuf[1024], *buf = staticbuf;
@@ -519,7 +524,7 @@ int bstrvsscanf(struct TStrSpan slice, const char* fmt, va_list ap)
     return res;
 }
 
-bool bstrcatvprintf(struct TStr* str, const char* fmt, va_list ap)
+bool tfstrcatvprintf(struct TStr* str, const char* fmt, va_list ap)
 {
     va_list cpy;
     char    staticbuf[1024], *buf = staticbuf;
@@ -572,11 +577,11 @@ bool bstrcatvprintf(struct TStr* str, const char* fmt, va_list ap)
     return true;
 }
 
-bool bstrcatprintf(struct TStr* s, const char* fmt, ...)
+bool tfstrcatprintf(struct TStr* s, const char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    const bool result = bstrcatvprintf(s, fmt, ap);
+    const bool result = tfstrcatvprintf(s, fmt, ap);
     va_end(ap);
     return result;
 }
@@ -584,7 +589,7 @@ bool bstrcatprintf(struct TStr* s, const char* fmt, ...)
 bool bstrInserSlice(struct TStr* str, size_t offset, const struct TStrSpan slice)
 {
     ASSERT(offset <= str->len);
-    if (!bstrMakeRoomFor(str, slice.len + 1))
+    if (!tfStrMakeRoomFor(str, slice.len + 1))
         return false;
     memmove(str->buf + offset + slice.len, str->buf + offset, str->len - offset);
     for (size_t i = 0; i < slice.len; i++)
@@ -603,7 +608,7 @@ bool bstrInsertChar(struct TStr* str, size_t i, char b)
     return bstrInserSlice(str, i, (struct TStrSpan){ .buf = &b, .len = 1 });
 }
 
-bool bstrMakeRoomFor(struct TStr* str, size_t addlen)
+bool tfStrMakeRoomFor(struct TStr* str, size_t addlen)
 {
     const size_t avail = str->alloc - str->len;
     if (avail >= addlen)
@@ -625,33 +630,33 @@ bool bstrMakeRoomFor(struct TStr* str, size_t addlen)
     return true;
 }
 
-struct TStrSpan bstrSplitIter(struct TFStrSplitIterable* iterable)
+struct TStrSpan tfStrSplitIter(struct TFStrSplitIterable* iterable)
 {
     ASSERT(!tfStrEmpty(iterable->buffer));
     ASSERT(!tfStrEmpty(iterable->delim));
     if (iterable->cursor == iterable->buffer.len)
         return (struct TStrSpan){ 0 };
 
-    const int offset = bstrIndexOfOffset(iterable->buffer, iterable->cursor, iterable->delim);
+    const int offset = tfStrIndexOfOffset(iterable->buffer, iterable->cursor, iterable->delim);
     if (offset == -1)
     {
         struct TStrSpan res = tfSub(iterable->buffer, iterable->cursor, iterable->buffer.len);
         iterable->cursor = iterable->buffer.len; // move the cursor to the very end of the buffer
         return res;
     }
-    struct TStrSpan res = tfSub((iterable->buffer), iterable->cursor, offset);
+    struct TStrSpan res = tfSub(iterable->buffer, iterable->cursor, offset);
     iterable->cursor = offset + iterable->delim.len;
     return res;
 }
 
-struct TStrSpan bstrSplitRevIter(struct TFStrSplitIterable* iterable)
+struct TStrSpan tfStrSplitRevIter(struct TFStrSplitIterable* iterable)
 {
     ASSERT(!tfStrEmpty(iterable->buffer));
     ASSERT(!tfStrEmpty(iterable->delim));
     if (iterable->cursor == 0)
         return (struct TStrSpan){ 0 };
 
-    const int offset = bstrLastIndexOfOffset(iterable->buffer, iterable->cursor - 1, iterable->delim);
+    const int offset = tfStrLastIndexOfOffset(iterable->buffer, iterable->cursor - 1, iterable->delim);
     if (offset == -1)
     {
         struct TStrSpan res = tfSub(iterable->buffer, 0, iterable->cursor);
@@ -664,7 +669,7 @@ struct TStrSpan bstrSplitRevIter(struct TFStrSplitIterable* iterable)
     return res;
 }
 
-int bstrCaselessCompare(const struct TStrSpan b0, const struct TStrSpan b1)
+int tfStrCaselessCompare(const struct TStrSpan b0, const struct TStrSpan b1)
 {
     size_t i0 = 0;
     size_t i1 = 0;
@@ -688,7 +693,7 @@ same_str:
     return 0;
 }
 
-int bstrCompare(const struct TStrSpan b0, const struct TStrSpan b1)
+int tfStrCompare(const struct TStrSpan b0, const struct TStrSpan b1)
 {
     size_t i0 = 0;
     size_t i1 = 0;
@@ -714,7 +719,7 @@ same_str:
     return 0;
 }
 
-bool bstrCaselessEqual(const struct TStrSpan b0, const struct TStrSpan b1)
+bool tfStrCaselessEqual(const struct TStrSpan b0, const struct TStrSpan b1)
 {
     if (b0.len != b1.len)
         return 0;
@@ -731,7 +736,7 @@ bool bstrCaselessEqual(const struct TStrSpan b0, const struct TStrSpan b1)
     return 1;
 }
 
-bool bstrEqual(const struct TStrSpan b0, const struct TStrSpan b1)
+bool tfStrEqual(const struct TStrSpan b0, const struct TStrSpan b1)
 {
     // printf("EQ: \"%.*s\" -- \"%.*s\"\n", (int)b0.len, b0.buf, (int)b1.len, b1.buf);
     if (b0.len != b1.len)
@@ -748,8 +753,8 @@ bool bstrEqual(const struct TStrSpan b0, const struct TStrSpan b1)
     return true;
 }
 
-static inline int bstrIndexOfCmp(const struct TStrSpan haystack, size_t offset, const struct TStrSpan needle,
-                                 bstr_cmp_handle handle)
+static inline int tfStrIndexOfCmp(const struct TStrSpan haystack, size_t offset, const struct TStrSpan needle,
+                                 tfStrCmpHandle handle)
 {
     if (needle.len > haystack.len || needle.len == 0)
         return -1;
@@ -783,7 +788,7 @@ static inline int bstrIndexOfCmp(const struct TStrSpan haystack, size_t offset, 
     size_t i = offset;
     while (i <= haystack.len - needle.len)
     {
-        if (bstrEqual((struct TStrSpan){ .buf = haystack.buf + i, .len = needle.len }, needle))
+        if (tfStrEqual((struct TStrSpan){ .buf = haystack.buf + i, .len = needle.len }, needle))
         {
             return i;
         }
@@ -793,7 +798,7 @@ static inline int bstrIndexOfCmp(const struct TStrSpan haystack, size_t offset, 
 }
 
 static inline int bstrLastIndexOfCmp(const struct TStrSpan haystack, size_t offset, const struct TStrSpan needle,
-                                     bstr_cmp_handle handle)
+                                     tfStrCmpHandle handle)
 {
     if (needle.len > haystack.len || needle.len == 0)
         return -1;
@@ -849,47 +854,47 @@ static inline int bstrLastIndexOfCmp(const struct TStrSpan haystack, size_t offs
     return -1;
 }
 
-int bstrIndexOfOffset(const struct TStrSpan haystack, size_t offset, const struct TStrSpan needle)
+int tfStrIndexOfOffset(const struct TStrSpan haystack, size_t offset, const struct TStrSpan needle)
 {
-    return bstrIndexOfCmp(haystack, offset, needle, bstrEqual);
+    return tfStrIndexOfCmp(haystack, offset, needle, tfStrEqual);
 }
 
 int tfStrIndexOf(const struct TStrSpan haystack, const struct TStrSpan needle)
 {
-    return bstrIndexOfCmp(haystack, 0, needle, bstrEqual);
+    return tfStrIndexOfCmp(haystack, 0, needle, tfStrEqual);
 }
 
 int tfStrIndexOfCaseless(const struct TStrSpan haystack, const struct TStrSpan needle)
 {
-    return bstrIndexOfCmp(haystack, 0, needle, bstrCaselessEqual);
+    return tfStrIndexOfCmp(haystack, 0, needle, tfStrCaselessEqual);
 }
 
 int tfStrIndexOfCaselessOffset(const struct TStrSpan haystack, size_t offset, const struct TStrSpan needle)
 {
-    return bstrIndexOfCmp(haystack, offset, needle, bstrCaselessEqual);
+    return tfStrIndexOfCmp(haystack, offset, needle, tfStrCaselessEqual);
 }
 
-int bstrLastIndexOf(const struct TStrSpan haystack, const struct TStrSpan needle)
+int tfStrLastIndexOf(const struct TStrSpan haystack, const struct TStrSpan needle)
 {
-    return bstrLastIndexOfCmp(haystack, haystack.len, needle, bstrEqual);
+    return bstrLastIndexOfCmp(haystack, haystack.len, needle, tfStrEqual);
 }
 
-int bstrLastIndexOfOffset(const struct TStrSpan haystack, size_t offset, const struct TStrSpan needle)
+int tfStrLastIndexOfOffset(const struct TStrSpan haystack, size_t offset, const struct TStrSpan needle)
 {
-    return bstrLastIndexOfCmp(haystack, offset, needle, bstrEqual);
+    return bstrLastIndexOfCmp(haystack, offset, needle, tfStrEqual);
 }
 
-int bstrLastIndexOfCaseless(const struct TStrSpan haystack, const struct TStrSpan needle)
+int tfStrLastIndexOfCaseless(const struct TStrSpan haystack, const struct TStrSpan needle)
 {
-    return bstrLastIndexOfCmp(haystack, haystack.len, needle, bstrCaselessEqual);
+    return bstrLastIndexOfCmp(haystack, haystack.len, needle, tfStrCaselessEqual);
 }
 
-int bstrLastIndexOfCaselessOffset(const struct TStrSpan haystack, size_t offset, const struct TStrSpan needle)
+int tfStrLastIndexOfCaselessOffset(const struct TStrSpan haystack, size_t offset, const struct TStrSpan needle)
 {
-    return bstrLastIndexOfCmp(haystack, offset, needle, bstrCaselessEqual);
+    return bstrLastIndexOfCmp(haystack, offset, needle, tfStrCaselessEqual);
 }
 
-int bstrIndexOfAny(const struct TStrSpan haystack, const struct TStrSpan characters)
+int tfStrIndexOfAny(const struct TStrSpan haystack, const struct TStrSpan characters)
 {
     for (size_t i = 0; i < haystack.len; i++)
     {
@@ -904,7 +909,7 @@ int bstrIndexOfAny(const struct TStrSpan haystack, const struct TStrSpan charact
     return false;
 }
 
-bool bstrcatjoin(struct TStr* str, struct TStrSpan* slices, size_t numSlices, struct TStrSpan sep)
+bool tfstrcatjoin(struct TStr* str, struct TStrSpan* slices, size_t numSlices, struct TStrSpan sep)
 {
     {
         ASSERT(str);
@@ -920,7 +925,7 @@ bool bstrcatjoin(struct TStr* str, struct TStrSpan* slices, size_t numSlices, st
             reserveLen += sep.len;
         }
         reserveLen += 1; // space for the null terminator
-        if (!bstrMakeRoomFor(str, reserveLen))
+        if (!tfStrMakeRoomFor(str, reserveLen))
             return false;
     }
     for (size_t i = 0; i < numSlices; i++)
@@ -939,12 +944,12 @@ bool bstrcatjoin(struct TStr* str, struct TStrSpan* slices, size_t numSlices, st
     return true;
 }
 
-bool bstrCatJoinCStr(struct TStr* str, const char** argv, size_t argc, struct TStrSpan sep)
+bool tfstrcatjoinCStr(struct TStr* str, const char** argv, size_t argc, struct TStrSpan sep)
 {
     for (size_t i = 0; i < argc; i++)
     {
         const size_t argLen = strlen(argv[i]);
-        if (!bstrMakeRoomFor(str, argLen + sep.len))
+        if (!tfStrMakeRoomFor(str, argLen + sep.len))
             return false;
         memcpy(str->buf + str->len, argv[i], argLen);
         str->len += argLen;
@@ -959,7 +964,7 @@ bool bstrCatJoinCStr(struct TStr* str, const char** argv, size_t argc, struct TS
     return true;
 }
 
-int bstrLastIndexOfAny(const struct TStrSpan haystack, const struct TStrSpan characters)
+int tfStrLastIndexOfAny(const struct TStrSpan haystack, const struct TStrSpan characters)
 {
     for (size_t i = haystack.len;; i--)
     {

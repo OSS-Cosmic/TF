@@ -38,7 +38,6 @@
 #include "../../Application/Interfaces/IFont.h"
 #include "../../Application/Interfaces/IProfiler.h"
 #include "../../Application/Interfaces/IUI.h"
-#include "../../Game/Interfaces/IScripting.h"
 #include "../../Graphics/Interfaces/IGraphics.h"
 #include "../../Utilities/Interfaces/IFileSystem.h"
 #include "../../Utilities/Interfaces/ILog.h"

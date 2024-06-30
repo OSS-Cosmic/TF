@@ -144,11 +144,20 @@ file(GLOB THE_FORGE_SOURCES
 
     Common_3/Application/InputSystem.cpp
     
-    Source/Forge/Core/TF_String.cpp
 
     Common_3/Utilities/ThirdParty/OpenSource/bstrlib/bstrlib.c
     
     Common_3/Tools/ThirdParty/OpenSource/meshoptimizer/src/*.cpp
+    
+   Source/Forge/Core/TF_String.cpp
+   Source/Forge/Core/TF_Core.cpp
+   Source/Forge/Core/Mem/TF_Allocators.cpp
+   
+   Source/Forge/Graphics/TF_GPUConfig.cpp
+   Source/Forge/Graphics/TF_Graphics.cpp
+   Source/Forge/Graphics/Vulkan/Vulkan.cpp
+   Source/Forge/Graphics/Vulkan/VulkanRaytracing.cpp 
+   Source/Forge/Graphics/Vulkan/VulkanShaderReflection.cpp
 )
 add_library(TF STATIC ${THE_FORGE_SOURCES})
 
@@ -290,11 +299,7 @@ target_include_directories(TF PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/Include")
 target_include_directories(TF PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(TF PUBLIC "Common_3/Utilities/ThirdParty/OpenSource/bstrlib")
 target_include_directories(TF PUBLIC "Common_3/Tools/ThirdParty/OpenSource/meshoptimizer/src")
-install (TARGETS TF 
-         ARCHIVE DESTINATION lib
-         LIBRARY DESTINATION lib
-         RUNTIME DESTINATION bin)
 
-add_subdirectory(Test)
 add_subdirectory(TFSamples)
+add_subdirectory(Test)
 

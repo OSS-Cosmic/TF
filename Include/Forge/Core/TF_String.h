@@ -39,15 +39,8 @@
 #ifndef TF_STRING_H_INCLUDED
 #define TF_STRING_H_INCLUDED
 
-#include <stdio.h>
-#include <limits.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <stdbool.h>
-#include <stdarg.h>
+#include "TF_Types.h"
+#include "Common_3/Utilities/Interfaces/ILog.h"
 
 #define TFSTR_LLSTR_SIZE 21
 #define TFSTR_LSTR_SIZE 16 
@@ -58,18 +51,17 @@ struct TStr {
   char* buf;
 };
 
-
 struct TStrSpan {
   char * buf;
   size_t len;
 }; 
 
-static inline struct TStrSpan tfToRef(char* c) { return (struct TStrSpan){ c, strlen(c) }; }
+//static inline struct TStrSpan tfToRef(char* c) { return (struct TStrSpan){ c, strlen(c) }; }
 static inline struct TStrSpan tfToRef(const char* c) { return (struct TStrSpan){ (char*)c, strlen(c) }; }
 static inline struct TStrSpan tfToRef(struct TStr str) { return (struct TStrSpan){ str.buf, str.len }; }
 
 static inline struct TStrSpan tfSub(struct TStrSpan slice, size_t a, size_t b) {
-  assert((b - a) <= slice.len);
+  ASSERT((b - a) <= slice.len);
   return (struct TStrSpan){slice.buf + a, b - a};
 }
 
@@ -94,7 +86,7 @@ struct TStrSpan tfStrLTrim(struct TStrSpan  slice);
  *
  * Note: this does not change the *length* of the bstr string as len 
  * but only the free buffer space we have. */
-bool bstrMakeRoomFor(struct TStr* str, size_t addlen);
+bool tfStrMakeRoomFor(struct TStr* str, size_t addlen);
 /* 
  * set the length of the buffer to the length specified. this
  * will also trigger a realloction if the length is greater then the size
@@ -103,14 +95,14 @@ bool bstrMakeRoomFor(struct TStr* str, size_t addlen);
  * Note: this does not set the null terminator for the string.
  * this will corrupt slices that are referencing a slice out of this buffer.
  **/
-bool bstrsetlen(struct TStr* str, size_t len);
+bool tfStrSetLen(struct TStr* str, size_t len);
 /**
  * set the amount of memory reserved by the bstr. will only ever increase
  * the size of the string 
  * 
  * A reserved string can be assigned with bstrAssign
  **/
-bool bstrsetresv(struct TStr* str, size_t reserveLen); 
+bool tfStrSetResv(struct TStr* str, size_t reserveLen); 
 
 /** 
  * Modify an bstr string in-place to make it empty (zero length) set null terminator.
@@ -118,7 +110,7 @@ bool bstrsetresv(struct TStr* str, size_t reserveLen);
  * so that next append operations will not require allocations up to the
  * number of bytes previously available. 
  **/
-bool bstr_clear(struct TStr* str);
+bool tfStrClear(struct TStr* str);
 
 /**
  * takes a bstr and duplicates the underlying buffer.
@@ -168,7 +160,7 @@ struct TFStrSplitIterable {
  * }
  *
  **/
-struct TStrSpan bstrSplitIter(struct TFStrSplitIterable*);
+struct TStrSpan tfStrSplitIter(struct TFStrSplitIterable*);
 
 /** 
  * splits a string using an iterator and returns a slice. a valid slice means there are 
@@ -190,7 +182,7 @@ struct TStrSpan bstrSplitIter(struct TFStrSplitIterable*);
  * }
  *
  **/
-struct TStrSpan bstrSplitRevIter(struct TFStrSplitIterable*);
+struct TStrSpan tfStrSplitRevIter(struct TFStrSplitIterable*);
 
 /* Set the bstr string length to the length as obtained with strlen(), so
  * considering as content only up to the first null term character.
@@ -209,7 +201,7 @@ struct TStrSpan bstrSplitRevIter(struct TFStrSplitIterable*);
  * the output will be "6" as the string was modified but the logical length
  * remains 6 bytes. 
  ** */
-bool bstrUpdateLen(struct TStr* str);
+bool tfStrUpdateLen(struct TStr* str);
 
 /* Append to the bstr string 's' a string obtained using printf-alike format
  * specifier.
@@ -224,11 +216,11 @@ bool bstrUpdateLen(struct TStr* str);
  *
  * if valid BSTR_OK else BSTR_ERR
  */
-bool bstrcatprintf(struct TStr* s, const char *fmt, ...); 
-bool bstrcatvprintf(struct TStr* str, const char* fmt, va_list ap);
+bool tfstrcatprintf(struct TStr* s, const char *fmt, ...); 
+bool tfstrcatvprintf(struct TStr* str, const char* fmt, va_list ap);
 
-int bstrsscanf(struct TStrSpan slice, const char* fmt, ...);
-int bstrvsscanf(struct TStrSpan slice, const char* fmt, va_list ap);
+int tfstrsscanf(struct TStrSpan slice, const char* fmt, ...);
+int tfstrvsscanf(struct TStrSpan slice, const char* fmt, va_list ap);
 
 /* This function is similar to bstrcatprintf, but much faster as it does
  * not rely on sprintf() family functions implemented by the libc that
@@ -249,7 +241,7 @@ int bstrvsscanf(struct TStrSpan slice, const char* fmt, va_list ap);
  * %U - 64 bit unsigned integer (unsigned long long, uint64_t)
  * %% - Verbatim "%" character.
  */
-bool bstrcatfmt(struct TStr*, char const *fmt, ...);
+bool tfstrcatfmt(struct TStr*, char const *fmt, ...);
 
 
 /*
@@ -258,11 +250,11 @@ bool bstrcatfmt(struct TStr*, char const *fmt, ...);
  *
  * this modifies bstr so slices that reference this bstr can become invalid.
  **/
-bool bstrcatjoin(struct TStr*, struct TStrSpan* slices, size_t numSlices, struct TStrSpan sep);
+bool tfstrcatjoin(struct TStr*, struct TStrSpan* slices, size_t numSlices, struct TStrSpan sep);
 /*
  * join an array of strings and cat them to bstr 
  **/
-bool bstrCatJoinCStr(struct TStr*, const char** argv, size_t argc, struct TStrSpan sep);
+bool tfstrcatjoinCStr(struct TStr*, const char** argv, size_t argc, struct TStrSpan sep);
 
 /**
  * this should fit safetly within BSTR_LLSTR_SIZE. 
@@ -271,8 +263,8 @@ bool bstrCatJoinCStr(struct TStr*, const char** argv, size_t argc, struct TStrSp
  * value is unable to be written or the length of the slice is greater
  *
  **/
-int bstrfmtll(struct TStrSpan slice, long long value); 
-int bstrfmtull(struct TStrSpan slice, unsigned long long value); 
+int tfstrfmtll(struct TStrSpan slice, long long value); 
+int tfstrfmtull(struct TStrSpan slice, unsigned long long value); 
 
 /*  
  * Parse a string into a 64-bit integer.
@@ -283,8 +275,8 @@ int bstrfmtull(struct TStrSpan slice, unsigned long long value);
  *   * if the string starts with 0o, the base will be 8
  *   * otherwise the base will be 10
  */
-bool bstrReadll(struct TStrSpan, long long* result);
-bool bstrReadull(struct TStrSpan, unsigned long long* result);
+bool tfStrReadll(struct TStrSpan, long long* result);
+bool tfStrReadull(struct TStrSpan, unsigned long long* result);
 
 /* Scan/search functions */
 /*  
@@ -294,34 +286,34 @@ bool bstrReadull(struct TStrSpan, unsigned long long* result);
  *  returned indicating that the strings are equal. If the lengths are
  *  different, if the first slice is longer 1 else -1. 
  */
-int bstrCaselessCompare (const struct TStrSpan b0, const struct TStrSpan b1);
+int tfStrCaselessCompare (const struct TStrSpan b0, const struct TStrSpan b1);
 /*
  *  The return value is the difference of the values of the characters where the
  *  two strings first differ after lower case transformation, otherwise 0 is
  *  returned indicating that the strings are equal. If the lengths are
  *  different, if the first slice is longer 1 else -1.
  */
-int bstrCompare  (const struct TStrSpan b0, const struct TStrSpan b1);
+int tfStrCompare  (const struct TStrSpan b0, const struct TStrSpan b1);
 /**
 *  Test if two strings are equal ignores case true else false.  
 **/
-bool bstrCaselessEqual (const struct TStrSpan b0, const struct TStrSpan b1);
+bool tfStrCaselessEqual (const struct TStrSpan b0, const struct TStrSpan b1);
 /**
 *  Test if two strings are equal return true else false.  
 **/
-bool bstrEqual (const struct TStrSpan b0, const struct TStrSpan b1);
+bool tfStrEqual (const struct TStrSpan b0, const struct TStrSpan b1);
 
-int bstrIndexOfOffset(const struct TStrSpan haystack, size_t offset, const struct TStrSpan needle);
+int tfStrIndexOfOffset(const struct TStrSpan haystack, size_t offset, const struct TStrSpan needle);
 int tfStrIndexOf(const struct TStrSpan haystack, const struct TStrSpan needle);
-int bstrLastIndexOfOffset(const struct TStrSpan str, size_t offset, const struct TStrSpan needle);
-int bstrLastIndexOf(const struct TStrSpan str, const struct TStrSpan needle);
+int tfStrLastIndexOfOffset(const struct TStrSpan str, size_t offset, const struct TStrSpan needle);
+int tfStrLastIndexOf(const struct TStrSpan str, const struct TStrSpan needle);
 
 int tfStrIndexOfCaselessOffset(const struct TStrSpan haystack, size_t offset, const struct TStrSpan needle);
 int tfStrIndexOfCaseless(const struct TStrSpan haystack, const struct TStrSpan needle);
-int bstrLastIndexOfCaseless(const struct TStrSpan haystack, const struct TStrSpan needle);
-int bstrLastIndexOfCaselessOffset(const struct TStrSpan haystack, size_t offset, const struct TStrSpan needle);
+int tfStrLastIndexOfCaseless(const struct TStrSpan haystack, const struct TStrSpan needle);
+int tfStrLastIndexOfCaselessOffset(const struct TStrSpan haystack, size_t offset, const struct TStrSpan needle);
 
-int bstrIndexOfAny(const struct TStrSpan haystack, const struct TStrSpan characters);
-int bstrLastIndexOfAny(const struct TStrSpan haystack, const struct TStrSpan characters);
+int tfStrIndexOfAny(const struct TStrSpan haystack, const struct TStrSpan characters);
+int tfStrLastIndexOfAny(const struct TStrSpan haystack, const struct TStrSpan characters);
 
 #endif

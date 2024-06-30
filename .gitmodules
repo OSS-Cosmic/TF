@@ -1,3 +1,6 @@
 [submodule "TFSamples"]
 	path = TFSamples
 	url = git@github.com:OSS-Cosmic/TFSamples.git
+[submodule "External/Vulkan-Headers"]
+	path = External/Vulkan-Headers
+	url = git@github.com:OSS-Cosmic/Vulkan-Headers.git
